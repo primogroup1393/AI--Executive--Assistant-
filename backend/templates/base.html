@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Executive Assistant{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">EA</div>
+      <div>
+        <div class="name">Executive Brain</div>
+        <div class="sub">Second Brain</div>
+      </div>
+    </div>
+    {% set path = request.url.path %}
+    <nav class="nav">
+      <a href="/" class="{{ 'active' if path=='/' }}"><span class="ic">◧</span> Dashboard</a>
+      <a href="/conversations" class="{{ 'active' if path.startswith('/conversation') }}"><span class="ic">🎙</span> Conversations</a>
+      <a href="/people" class="{{ 'active' if path.startswith('/pe') }}"><span class="ic">👤</span> People</a>
+      <a href="/companies" class="{{ 'active' if path.startswith('/compan') }}"><span class="ic">🏢</span> Companies</a>
+      <div class="sep"></div>
+      <a href="#" onclick="openAdd();return false;"><span class="ic">＋</span> Add conversation</a>
+    </nav>
+    <div class="side-foot">
+      Signed in · <a href="/logout">Log out</a>
+      {% if provider %}<div class="pill-provider">AI: {{ provider }} · STT: {{ transcriber }}</div>{% endif %}
+    </div>
+  </aside>
+
+  <main class="main">
+    <div id="procBanner" class="card" style="display:none;align-items:center;gap:12px;margin-bottom:16px;background:color-mix(in srgb,var(--warn) 8%,var(--surface));">
+      <span class="dot proc"></span><span id="procText" class="muted"></span>
+    </div>
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<!-- Add conversation modal -->
+<div class="modal-bg" id="addModal">
+  <div class="modal">
+    <h2>Add a conversation <button class="x" onclick="closeAdd()">×</button></h2>
+    <p class="faint">Upload an audio file (call recording, voice memo, meeting) or paste a transcript. The AI will transcribe, summarize, and extract commitments, decisions and follow-ups automatically.</p>
+    <form onsubmit="submitConversation(event)">
+      <label>Title (optional)</label>
+      <input name="title" placeholder="e.g. Call with Ali about Project Falcon">
+      <div style="display:flex;gap:12px;">
+        <div style="flex:1">
+          <label>Source</label>
+          <select name="source">
+            <option value="phone">iPhone call recording</option>
+            <option value="whatsapp">WhatsApp voice</option>
+            <option value="in_person">In-person meeting</option>
+            <option value="online">Online meeting</option>
+            <option value="voice_note">Voice note</option>
+            <option value="upload" selected>Uploaded audio</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <label>When did it happen?</label>
+          <input type="date" name="occurred_at">
+        </div>
+      </div>
+      <label>Audio file (optional)</label>
+      <input type="file" name="audio" accept="audio/*,video/mp4,video/quicktime">
+      <label>Or paste transcript / notes</label>
+      <textarea name="transcript" placeholder="Paste a transcript here, or leave empty if you uploaded audio…"></textarea>
+      <label style="display:flex;align-items:center;gap:8px;font-weight:500;margin-top:14px;">
+        <input type="checkbox" name="consent_ack" value="true" style="width:auto;" required>
+        I confirm this recording complies with consent laws where the parties are located.
+      </label>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px;">
+        <button type="button" class="btn ghost" onclick="closeAdd()">Cancel</button>
+        <button type="submit" class="btn primary" id="addSubmit">Add &amp; analyze</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script src="/static/app.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

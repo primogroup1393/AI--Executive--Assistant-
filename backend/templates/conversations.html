@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Conversations · Executive Brain{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="title"><h1>Conversations</h1><small>{{ conversations|length }} recorded</small></div>
+  <button class="btn primary" onclick="openAdd()">＋ Add conversation</button>
+</div>
+{% if conversations %}
+<div class="card" style="padding:6px 18px;">
+  {% for c in conversations %}
+  <div class="rowlink">
+    <div style="min-width:0;">
+      <a href="/conversation/{{ c.id }}" style="font-weight:600;">{{ c.title }}</a>
+      <div class="faint">
+        <span class="tag">{{ c.source|replace('_',' ') }}</span>
+        {{ (c.occurred_at or c.created_at)[:16] }} ·
+        {{ c.n_items }} items · {{ c.language or '—' }}
+      </div>
+    </div>
+    <span class="dot {{ 'done' if c.status=='done' else ('err' if c.status=='error' else ('new' if c.status=='new' else 'proc')) }}"
+          title="{{ c.status }}"></span>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card"><div class="empty">No conversations yet. Click “Add conversation” to capture your first one.</div></div>
+{% endif %}
+{% endblock %}

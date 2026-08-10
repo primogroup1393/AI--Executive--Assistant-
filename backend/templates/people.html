@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}People · Executive Brain{% endblock %}
+{% block content %}
+<div class="topbar"><div class="title"><h1>People</h1><small>{{ people|length }} contacts</small></div></div>
+{% if people %}
+<div class="grid cards">
+  {% for p in people %}
+  <a href="/person/{{ p.id }}" class="card" style="display:block;">
+    <h3 style="margin-bottom:4px;">{{ p.name }}</h3>
+    <div class="faint">{{ p.role or '' }}{% if p.company_name %} · {{ p.company_name }}{% endif %}</div>
+    <div style="margin-top:12px;display:flex;gap:8px;">
+      <span class="tag">{{ p.n_convs }} conversations</span>
+      {% if p.n_open %}<span class="tag warn">{{ p.n_open }} open</span>{% endif %}
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card"><div class="empty">No people yet. They appear automatically as you add conversations.</div></div>
+{% endif %}
+{% endblock %}

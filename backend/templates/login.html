@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · Executive Assistant</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="logo">EA</div>
+    <h1 style="margin-bottom:2px;">Executive Brain</h1>
+    <p class="muted" style="margin-bottom:18px;">Your private business memory.</p>
+    <form method="post" action="/login">
+      <label>Password</label>
+      <input type="password" name="password" autofocus required>
+      <button class="btn primary" style="width:100%;justify-content:center;margin-top:16px;" type="submit">Sign in</button>
+    </form>
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    <p class="faint" style="margin-top:18px;">If you didn't set a password, check the server console for the generated one.</p>
+  </div>
+</div>
+</body>
+</html>

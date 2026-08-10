@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Companies · Executive Brain{% endblock %}
+{% block content %}
+<div class="topbar"><div class="title"><h1>Companies</h1><small>{{ companies|length }} organizations</small></div></div>
+{% if companies %}
+<div class="grid cards">
+  {% for c in companies %}
+  <a href="/company/{{ c.id }}" class="card" style="display:block;">
+    <h3 style="margin-bottom:4px;">{{ c.name }}</h3>
+    <div style="margin-top:10px;display:flex;gap:8px;">
+      <span class="tag">{{ c.n_convs }} conversations</span>
+      <span class="tag">{{ c.n_people }} people</span>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card"><div class="empty">No companies yet. They appear automatically as you add conversations.</div></div>
+{% endif %}
+{% endblock %}

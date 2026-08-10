@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Executive Brain{% endblock %}
+
+{% macro item_row(it, show_person=True) %}
+  <li data-item="{{ it.id }}">
+    <div class="grow">
+      <div class="itemtext">{{ it.content }}</div>
+      <div class="who">
+        {% if it.due_date %}<span class="tag warn">⏰ {{ it.due_date }}</span>{% endif %}
+        {% if show_person and it.person_name %}{{ it.person_name }} · {% endif %}
+        {% if it.conv_title %}<a href="/conversation/{{ it.conversation_id }}">{{ it.conv_title }}</a>{% endif %}
+      </div>
+    </div>
+    <button class="btn sm ghost" title="Mark done" onclick="setItem({{ it.id }},'done',event)">✓</button>
+  </li>
+{% endmacro %}
+
+{% block content %}
+<div class="topbar">
+  <div class="title"><h1>Good day 👋</h1><small>Here's what needs your attention.</small></div>
+  <button class="btn primary" onclick="openAdd()">＋ Add conversation</button>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="n">{{ counts.conversations }}</div><div class="l">Conversations</div></div>
+  <div class="stat"><div class="n">{{ counts.people }}</div><div class="l">People</div></div>
+  <div class="stat"><div class="n">{{ counts.companies }}</div><div class="l">Companies</div></div>
+  <div class="stat"><div class="n">{{ counts.open_items }}</div><div class="l">Open items</div></div>
+</div>
+
+<!-- AI search / chat -->
+<div class="card" style="margin-bottom:20px;">
+  <h3>Ask your business memory</h3>
+  <p class="faint">Answers come only from your recorded conversations, with links to the source.</p>
+  <div class="chat-wrap">
+    <div class="chat-log" id="chatLog"></div>
+    <div class="chat-input">
+      <input id="chatInput" placeholder="e.g. What did I promise Ali last time?" onkeydown="chatKey(event)">
+      <button class="btn primary" onclick="sendChat()">Ask</button>
+    </div>
+    <div class="suggest">
+      <button onclick="sendChat('Who am I waiting for an answer from?')">Who am I waiting on?</button>
+      <button onclick="sendChat('What important commitments have I made this month?')">My commitments this month</button>
+      <button onclick="sendChat('What issues are still unresolved?')">Unresolved issues</button>
+    </div>
+  </div>
+</div>
+
+<div class="grid cards">
+  <div class="card">
+    <h3>Needs your attention <span class="count">{{ attention|length }}</span></h3>
+    {% if attention %}<ul class="list">
+      {% for it in attention %}<li data-item="{{ it.id }}"><span class="dot {{ 'err' if it.kind=='risk' else 'proc' }}" style="margin-top:6px"></span>
+        <div class="grow"><div class="itemtext">{{ it.content }}</div>
+        <div class="who"><span class="tag {{ 'bad' if it.kind=='risk' else 'warn' }}">{{ it.kind|replace('_',' ') }}</span>
+          {% if it.conv_title %}<a href="/conversation/{{ it.conversation_id }}">{{ it.conv_title }}</a>{% endif %}</div></div>
+        <button class="btn sm ghost" onclick="setItem({{ it.id }},'done',event)">✓</button></li>{% endfor %}
+    </ul>{% else %}<div class="empty">Nothing urgent. 🎉</div>{% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Open commitments <span class="count">{{ open_commitments|length }}</span></h3>
+    {% if open_commitments %}<ul class="list">
+      {% for it in open_commitments %}<li data-item="{{ it.id }}">
+        <span class="tag {{ 'me' if it.kind=='my_commitment' else 'them' }}">{{ 'Me' if it.kind=='my_commitment' else 'Them' }}</span>
+        <div class="grow"><div class="itemtext">{{ it.content }}</div>
+        <div class="who">{% if it.person_name %}{{ it.person_name }} · {% endif %}<a href="/conversation/{{ it.conversation_id }}">{{ it.conv_title }}</a></div></div>
+        <button class="btn sm ghost" onclick="setItem({{ it.id }},'done',event)">✓</button></li>{% endfor %}
+    </ul>{% else %}<div class="empty">No open commitments tracked yet.</div>{% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Pending follow-ups <span class="count">{{ follow_ups|length }}</span></h3>
+    {% if follow_ups %}<ul class="list">{% for it in follow_ups %}{{ item_row(it) }}{% endfor %}</ul>
+    {% else %}<div class="empty">No follow-ups pending.</div>{% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Deadlines <span class="count">{{ deadlines|length }}</span></h3>
+    {% if deadlines %}<ul class="list">{% for it in deadlines %}
+      <li data-item="{{ it.id }}"><span class="tag warn">{{ it.due_date }}</span>
+      <div class="grow"><div class="itemtext">{{ it.content }}</div>
+      <div class="who"><a href="/conversation/{{ it.conversation_id }}">{{ it.conv_title }}</a></div></div>
+      <button class="btn sm ghost" onclick="setItem({{ it.id }},'done',event)">✓</button></li>{% endfor %}</ul>
+    {% else %}<div class="empty">No upcoming deadlines.</div>{% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Recent decisions <span class="count">{{ decisions|length }}</span></h3>
+    {% if decisions %}<ul class="list">{% for it in decisions %}
+      <li><span class="tag good">✓</span><div class="grow"><div class="itemtext">{{ it.content }}</div>
+      <div class="who"><a href="/conversation/{{ it.conversation_id }}">{{ it.conv_title }}</a></div></div></li>{% endfor %}</ul>
+    {% else %}<div class="empty">No decisions recorded yet.</div>{% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Today's conversations <span class="count">{{ todays|length }}</span></h3>
+    {% if todays %}{% for c in todays %}
+      <div class="rowlink"><a href="/conversation/{{ c.id }}">{{ c.title }}</a>
+      <span class="tag">{{ c.source|replace('_',' ') }}</span></div>{% endfor %}
+    {% else %}<div class="empty">No conversations logged today.</div>{% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Recent people</h3>
+    {% if recent_people %}{% for p in recent_people %}
+      <div class="rowlink"><a href="/person/{{ p.id }}">{{ p.name }}</a>
+      <span class="faint">{{ p.company_name or p.role or '' }}</span></div>{% endfor %}
+    {% else %}<div class="empty">No people yet.</div>{% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Recent companies</h3>
+    {% if recent_companies %}{% for c in recent_companies %}
+      <div class="rowlink"><a href="/company/{{ c.id }}">{{ c.name }}</a></div>{% endfor %}
+    {% else %}<div class="empty">No companies yet.</div>{% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Recent conversations</h3>
+    {% if recent_convs %}{% for c in recent_convs %}
+      <div class="rowlink"><a href="/conversation/{{ c.id }}">{{ c.title }}</a>
+      <span class="dot {{ 'done' if c.status=='done' else ('err' if c.status=='error' else 'proc') }}"></span></div>{% endfor %}
+    {% else %}<div class="empty">Add your first conversation to begin.</div>{% endif %}
+  </div>
+</div>
+{% endblock %}

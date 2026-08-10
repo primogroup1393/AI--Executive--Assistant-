@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{{ conv.title }} · Executive Brain{% endblock %}
+
+{% set kind_labels = {
+  'topic':'Topics','decision':'Decisions','my_commitment':'My commitments',
+  'their_commitment':'Their commitments','action_item':'Action items','followup':'Follow-ups',
+  'deadline':'Deadlines','date':'Important dates','amount':'Amounts & numbers',
+  'open_issue':'Unresolved issues','question_next':'Questions for next time',
+  'risk':'Risks & sensitive','highlight':'Worth remembering'} %}
+{% set order = ['decision','my_commitment','their_commitment','action_item','followup',
+  'deadline','date','amount','open_issue','question_next','risk','topic','highlight'] %}
+
+{% block content %}
+<div class="topbar">
+  <div class="title">
+    <h1>{{ conv.title }}</h1>
+    <small>
+      <span class="tag">{{ conv.source|replace('_',' ') }}</span>
+      {{ (conv.occurred_at or conv.created_at)[:16] }} ·
+      language: {{ conv.language or '—' }} ·
+      status: {{ conv.status }}
+    </small>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn ghost sm" onclick="reprocess({{ conv.id }})">↻ Re-analyze</button>
+    <button class="btn danger sm" onclick="delConversation({{ conv.id }})">🗑 Delete</button>
+  </div>
+</div>
+
+{% if conv.status == 'error' %}
+<div class="card" style="border-color:var(--bad);margin-bottom:16px;">
+  <strong class="badge-attention">Processing error</strong>
+  <p class="muted">{{ conv.error }}</p>
+</div>
+{% endif %}
+
+{% if people or companies %}
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+  {% for p in people %}<a class="tag me" href="/person/{{ p.id }}">👤 {{ p.name }}</a>{% endfor %}
+  {% for c in companies %}<a class="tag them" href="/company/{{ c.id }}">🏢 {{ c.name }}</a>{% endfor %}
+</div>
+{% endif %}
+
+<div class="grid" style="grid-template-columns: 1.2fr .8fr; align-items:start;">
+  <div>
+    <div class="card">
+      <h3>Executive summary</h3>
+      <div class="prose {{ 'rtl' if conv.language=='fa' }}" id="summary">{{ conv.summary or 'No summary yet.' }}</div>
+    </div>
+
+    <div class="section-title">Extracted knowledge</div>
+    {% set ns = namespace(any=false) %}
+    {% for kind in order %}
+      {% if grouped.get(kind) %}
+        {% set ns.any = true %}
+        <div class="card" style="margin-bottom:14px;">
+          <h3>{{ kind_labels.get(kind, kind) }} <span class="count">{{ grouped[kind]|length }}</span></h3>
+          <ul class="list">
+            {% for it in grouped[kind] %}
+            <li data-item="{{ it.id }}">
+              <div class="grow">
+                <div class="itemtext">{{ it.content }}</div>
+                <div class="who">
+                  {% if it.owner in ('me','them') %}<span class="tag {{ it.owner }}">{{ 'Me' if it.owner=='me' else 'Them' }}</span>{% endif %}
+                  {% if it.due_date %}<span class="tag warn">⏰ {{ it.due_date }}</span>{% endif %}
+                  {% if it.person_name %}<a href="/person/{{ it.person_id }}">{{ it.person_name }}</a>{% endif %}
+                  {% if it.source_quote %}<span class="faint" title="{{ it.source_quote }}">“{{ it.source_quote[:80] }}{% if it.source_quote|length > 80 %}…{% endif %}”</span>{% endif %}
+                </div>
+              </div>
+              {% if it.status == 'open' and kind in ['my_commitment','their_commitment','action_item','followup','open_issue','deadline'] %}
+              <button class="btn sm ghost" onclick="setItem({{ it.id }},'done',event)">✓</button>
+              {% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+    {% endfor %}
+    {% if not ns.any %}<div class="card"><div class="empty">No structured items extracted yet.</div></div>{% endif %}
+  </div>
+
+  <div>
+    {% if conv.audio_path %}
+    <div class="card" style="margin-bottom:14px;">
+      <h3>Audio</h3>
+      <audio controls style="width:100%;" src="/api/audio/{{ conv.id }}"></audio>
+    </div>
+    {% endif %}
+    <div class="card">
+      <h3>Transcript</h3>
+      {% if segments %}
+        <div class="transcript">
+          {% for s in segments %}
+          <div class="seg">
+            <span class="ts">{{ '%02d:%02d'|format((s.start_ms or 0)//60000, ((s.start_ms or 0)//1000)%60) }}</span>
+            {% if s.speaker %}<strong>{{ s.speaker }}:</strong>{% endif %}
+            {{ s.text }}
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="transcript {{ 'rtl' if conv.language=='fa' }}">{{ conv.transcript or 'No transcript.' }}</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

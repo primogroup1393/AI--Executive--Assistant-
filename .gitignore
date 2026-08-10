@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Secrets & local config
+.env
+backend/.env
+
+# App data (private conversations, audio, database) — NEVER commit
+backend/data/
+data/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+.secret_key
+.password_hash
+
+# Audio uploads
+*.mp3
+*.m4a
+*.wav
+*.ogg
+*.mp4
+*.mov
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.log

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% set entity = profile.person if kind=='person' else profile.company %}
+{% block title %}{{ entity.name }} · Executive Brain{% endblock %}
+
+{% macro items(title, arr, tagcls='') %}
+  {% if arr %}
+  <div class="card" style="margin-bottom:14px;">
+    <h3>{{ title }} <span class="count">{{ arr|length }}</span></h3>
+    <ul class="list">
+      {% for it in arr %}
+      <li data-item="{{ it.id }}">
+        <div class="grow"><div class="itemtext">{{ it.content }}</div>
+        <div class="who">
+          {% if it.due_date %}<span class="tag warn">⏰ {{ it.due_date }}</span>{% endif %}
+          {% if it.conversation_id %}<a href="/conversation/{{ it.conversation_id }}">source #{{ it.conversation_id }}</a>{% endif %}
+        </div></div>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="topbar">
+  <div class="title">
+    <h1>{{ entity.name }}</h1>
+    <small>
+      {% if kind=='person' %}{{ profile.person.role or 'Contact' }}{% if profile.person.company_name %} · <a href="#">{{ profile.person.company_name }}</a>{% endif %}
+      {% else %}{{ profile.people|length }} known people{% endif %}
+      · {{ profile.conversations|length }} conversations
+    </small>
+  </div>
+  <button class="btn primary" onclick="loadBriefing('{{ kind }}', {{ entity.id }})">✨ Pre-call briefing</button>
+</div>
+
+<div id="briefingBox" class="card prose" style="margin-bottom:18px;display:block;">
+  <span class="faint">Click “Pre-call briefing” for a 45-second summary of everything you need before your next conversation.</span>
+</div>
+
+<div class="grid" style="grid-template-columns:1fr 1fr;align-items:start;">
+  <div>
+    {{ items('Their commitments to me', profile.their_commitments) }}
+    {{ items('My commitments to them', profile.my_commitments) }}
+    {{ items('Open action items & follow-ups', profile.open_actions) }}
+    {{ items('Unresolved issues', profile.open_issues) }}
+  </div>
+  <div>
+    {{ items('Decisions', profile.decisions) }}
+    {% if kind=='person' %}
+      {{ items('Deadlines & dates', profile.deadlines) }}
+      {{ items('Questions to ask next time', profile.questions_next) }}
+      {{ items('Risks & sensitive', profile.risks) }}
+    {% endif %}
+
+    {% if profile.facts %}
+    <div class="card" style="margin-bottom:14px;">
+      <h3>What to remember</h3>
+      <ul class="list">
+        {% for f in profile.facts %}<li><div class="grow"><div class="itemtext">{{ f.fact }}</div>
+          {% if f.source_conv %}<div class="who"><a href="/conversation/{{ f.source_conv }}">source #{{ f.source_conv }}</a></div>{% endif %}</div></li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if kind=='company' and profile.people %}
+    <div class="card" style="margin-bottom:14px;">
+      <h3>People at {{ entity.name }}</h3>
+      {% for p in profile.people %}<div class="rowlink"><a href="/person/{{ p.id }}">{{ p.name }}</a><span class="faint">{{ p.role or '' }}</span></div>{% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <h3>Conversation history</h3>
+      {% if profile.conversations %}
+        {% for c in profile.conversations %}
+        <div class="rowlink">
+          <a href="/conversation/{{ c.id }}">{{ c.title }}</a>
+          <span class="faint">{{ (c.occurred_at or c.created_at)[:10] }}</span>
+        </div>
+        {% endfor %}
+      {% else %}<div class="empty">No conversations yet.</div>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
