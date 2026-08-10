@@ -61,20 +61,44 @@ one tap. Everything *after* capture — the real value — is fully built.
 
 ## Quick start
 
+### 🔒 Option A — Fully private, one command (recommended)
+
+Everything runs **on your own computer** (local speech-to-text + local AI).
+**No audio or text ever leaves your machine.** You only need
+[Docker Desktop](https://www.docker.com/products/docker-desktop/) installed.
+
 ```bash
-# from the project root
-./run.sh
-# then open http://localhost:8000
+./start-private.sh
+# then open http://localhost:8000  (your password is shown + saved in .env)
 ```
 
-- **No API keys?** It still runs in **demo mode** — every screen and flow
-  works; real transcription/AI activate the moment you add keys.
-- **To unlock the real product:** copy `backend/.env.example` to
-  `backend/.env`, set `APP_PASSWORD`, `ANTHROPIC_API_KEY`, and
-  `OPENAI_API_KEY`. See the [Setup Guide](docs/04-setup-guide.md).
+The first run downloads the local AI model (a few GB) once; later starts are
+instant. Recommended: a computer with ~8 GB free RAM. On a lighter machine set
+`OLLAMA_MODEL=llama3.2:3b` in `.env`. See the [Setup Guide](docs/04-setup-guide.md).
 
-If you didn't set `APP_PASSWORD`, the app prints a generated one to the console
-on startup (it's never left open).
+### ☁️ Option B — Cloud AI (highest quality, least setup)
+
+```bash
+./run.sh          # then open http://localhost:8000
+```
+
+- **No API keys?** It still runs in **demo mode** — every screen works; real
+  transcription/AI activate the moment you add keys.
+- **To use cloud AI:** copy `backend/.env.example` → `backend/.env`, set
+  `MODE=cloud`, `APP_PASSWORD`, `ANTHROPIC_API_KEY`, and `OPENAI_API_KEY`.
+
+Either way, if you didn't set `APP_PASSWORD`, a strong one is generated and
+shown on startup — the app is never left open.
+
+### Which should I choose?
+
+| | Private (Option A) | Cloud (Option B) |
+|---|---|---|
+| Data leaves your machine | **Never** | Transcript/audio sent to AI API to process (not used for training) |
+| Quality | Very good | Best |
+| Setup | Install Docker, one command | Two API keys |
+| Cost | Free (your computer) | ~a few $/month usage |
+| Needs | ~8 GB RAM | Any machine |
 
 ---
 

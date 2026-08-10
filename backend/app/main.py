@@ -42,6 +42,7 @@ def _startup() -> None:
         "",
         "=" * 64,
         "  AI Executive Assistant is running.",
+        f"  Mode:            {config.MODE}",
         f"  Data dir:        {config.DATA_DIR}",
         f"  LLM provider:    {get_llm().name}",
         f"  Transcription:   {get_transcriber().name}",

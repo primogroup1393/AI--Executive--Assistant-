@@ -61,6 +61,36 @@ class AnthropicLLM(LLM):
         return "".join(parts).strip()
 
 
+class OllamaLLM(LLM):
+    """
+    Fully-local LLM via Ollama (https://ollama.com). Nothing leaves the machine.
+    Good default model: qwen2.5:7b (strong multilingual incl. Persian).
+    """
+    name = "ollama"
+    available = True
+
+    def __init__(self) -> None:
+        self.host = config.OLLAMA_HOST
+        self.model = config.OLLAMA_MODEL
+
+    def complete(self, system: str, user: str, *, max_tokens: int = 2000,
+                 temperature: float = 0.2) -> str:
+        payload = {
+            "model": self.model,
+            "stream": False,
+            "options": {"temperature": temperature, "num_predict": max_tokens},
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+        }
+        with httpx.Client(timeout=600, trust_env=False) as client:
+            r = client.post(f"{self.host}/api/chat", json=payload)
+            r.raise_for_status()
+            data = r.json()
+        return (data.get("message", {}) or {}).get("content", "").strip()
+
+
 class MockLLM(LLM):
     """
     Deterministic, no-network stand-in. It is NOT random: it produces a
@@ -145,6 +175,8 @@ def get_llm() -> LLM:
     provider = config.resolved_llm_provider()
     if provider == "anthropic" and config.ANTHROPIC_API_KEY:
         _llm = AnthropicLLM()
+    elif provider == "ollama":
+        _llm = OllamaLLM()
     else:
         _llm = MockLLM()
     return _llm

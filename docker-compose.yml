@@ -1,0 +1,56 @@
+# Fully-private, one-command deployment.
+#   Everything runs locally in containers. No audio or text leaves your machine.
+#
+#   Start:  ./start-private.sh      (recommended — handles password + model)
+#   or:     docker compose up -d --build
+#
+# Services:
+#   ollama       local AI engine (understanding, chat, briefings)
+#   ollama-pull  one-shot: downloads the AI model on first run, then exits
+#   app          the Executive Assistant web app (local Whisper for speech-to-text)
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama-models:/root/.ollama
+
+  ollama-pull:
+    image: ollama/ollama:latest
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "echo 'Downloading local AI model (first run only, a few GB)...';
+       until ollama list >/dev/null 2>&1; do sleep 1; done;
+       ollama pull ${OLLAMA_MODEL:-qwen2.5:7b};
+       echo 'Model ready.'"
+    restart: "no"
+
+  app:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      ollama:
+        condition: service_started
+      ollama-pull:
+        condition: service_completed_successfully
+    environment:
+      - MODE=private
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:7b}
+      - WHISPER_MODEL=${WHISPER_MODEL:-small}
+      - APP_PASSWORD=${APP_PASSWORD:-}
+      - SESSION_TTL_SECONDS=43200
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/data:/app/data          # your database + audio (on your disk)
+      - whisper-cache:/root/.cache         # cached speech-to-text model
+
+volumes:
+  ollama-models:
+  whisper-cache:

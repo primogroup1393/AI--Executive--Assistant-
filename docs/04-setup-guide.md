@@ -3,6 +3,39 @@
 This guide is written for a non-programmer. Follow it top to bottom. If you
 have technical help, hand them the "Run the app" section; the rest is for you.
 
+You have two ways to run it. Pick one:
+
+- **🔒 Private (recommended):** everything runs on your own computer, nothing
+  leaves it. One install (Docker) + one command. Best for confidential
+  conversations. → jump to **"Option A"** below.
+- **☁️ Cloud:** uses two AI services for the highest quality with the least
+  setup. → **"Option B"** below.
+
+---
+
+## Option A — Fully private (nothing leaves your computer)
+
+**What you need:** a computer with about 8 GB of free memory, and Docker
+Desktop (a free, one-time install).
+
+1. Install **Docker Desktop**: https://www.docker.com/products/docker-desktop/
+   Open it once after installing and wait until it says *running*.
+2. Double-click / run **`start-private.sh`** in the project folder (on Windows,
+   run it inside WSL, or use `docker compose up -d --build`).
+3. The first run downloads the local AI model (a few GB) — this can take a few
+   minutes. You'll see a login password printed and saved in the `.env` file.
+4. Open **http://localhost:8000** and sign in.
+
+That's it — no accounts, no API keys, no data leaving your machine. To stop:
+`docker compose down`. Your data stays in `backend/data`.
+
+> Lighter computer? Open `.env` and change `OLLAMA_MODEL=qwen2.5:7b` to
+> `OLLAMA_MODEL=llama3.2:3b` (uses less memory), then run it again.
+
+---
+
+## Option B — Cloud AI
+
 There are three things to do:
 1. **Get two API keys** (5 minutes) — unlocks transcription + AI.
 2. **Run the app** (or have someone run it once on a server/Mac).

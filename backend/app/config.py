@@ -42,29 +42,58 @@ SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
 SESSION_TTL_SECONDS = int(os.getenv("SESSION_TTL_SECONDS", str(60 * 60 * 12)))  # 12h
 
 # ---------------------------------------------------------------------------
+# Deployment mode
+# ---------------------------------------------------------------------------
+# MODE controls the default privacy posture:
+#   "private" -> everything runs locally: local Whisper + local LLM (Ollama).
+#                No audio or text ever leaves your machine.
+#   "cloud"   -> use Anthropic + OpenAI APIs (best quality, least setup).
+#   "auto"    -> use whichever keys/services are configured (default).
+MODE = os.getenv("MODE", "auto").strip().lower()
+
+# ---------------------------------------------------------------------------
 # AI providers
 # ---------------------------------------------------------------------------
-# LLM (understanding / extraction / chat). Provider: "anthropic" or "mock".
+# LLM (understanding / extraction / chat): "anthropic" | "ollama" | "mock" | "auto".
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "auto").strip().lower()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5").strip()
 
-# Transcription. Provider: "openai", "mock".
+# Local LLM via Ollama (fully private).
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434").strip().rstrip("/")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b").strip()
+
+# Transcription: "openai" | "local" | "mock" | "auto".
 TRANSCRIBE_PROVIDER = os.getenv("TRANSCRIBE_PROVIDER", "auto").strip().lower()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 OPENAI_TRANSCRIBE_MODEL = os.getenv("OPENAI_TRANSCRIBE_MODEL", "whisper-1").strip()
+
+# Local Whisper (fully private, via faster-whisper).
+WHISPER_MODEL = os.getenv("WHISPER_MODEL", "small").strip()      # tiny|base|small|medium|large-v3
+WHISPER_DEVICE = os.getenv("WHISPER_DEVICE", "cpu").strip()      # cpu|cuda
+WHISPER_COMPUTE = os.getenv("WHISPER_COMPUTE", "int8").strip()   # int8|float16|float32
 
 # Respect the outbound proxy configured in this environment, if any.
 HTTPS_PROXY = os.getenv("HTTPS_PROXY", "") or os.getenv("https_proxy", "")
 
 
 def resolved_llm_provider() -> str:
-    if LLM_PROVIDER == "auto":
-        return "anthropic" if ANTHROPIC_API_KEY else "mock"
-    return LLM_PROVIDER
+    if LLM_PROVIDER != "auto":
+        return LLM_PROVIDER
+    if MODE == "private":
+        return "ollama"
+    if MODE == "cloud":
+        return "anthropic"
+    return "anthropic" if ANTHROPIC_API_KEY else "mock"
 
 
 def resolved_transcribe_provider() -> str:
-    if TRANSCRIBE_PROVIDER == "auto":
-        return "openai" if OPENAI_API_KEY else "mock"
-    return TRANSCRIBE_PROVIDER
+    if TRANSCRIBE_PROVIDER != "auto":
+        return TRANSCRIBE_PROVIDER
+    if MODE == "private":
+        return "local"
+    if MODE == "cloud":
+        return "openai"
+    if OPENAI_API_KEY:
+        return "openai"
+    return "mock"

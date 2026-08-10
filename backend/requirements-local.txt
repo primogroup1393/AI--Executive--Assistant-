@@ -1,0 +1,4 @@
+# Private/local mode dependencies = base app + local speech-to-text.
+# (The local LLM runs in a separate Ollama container, no Python dep needed.)
+-r requirements.txt
+faster-whisper==1.1.0
