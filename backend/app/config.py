@@ -73,8 +73,54 @@ WHISPER_MODEL = os.getenv("WHISPER_MODEL", "small").strip()      # tiny|base|sma
 WHISPER_DEVICE = os.getenv("WHISPER_DEVICE", "cpu").strip()      # cpu|cuda
 WHISPER_COMPUTE = os.getenv("WHISPER_COMPUTE", "int8").strip()   # int8|float16|float32
 
+# ---------------------------------------------------------------------------
+# AI Phone Agent (answers calls, records, summarizes)  — cloud-only feature.
+# ---------------------------------------------------------------------------
+# Publicly reachable base URL of THIS server, e.g. https://brain.example.com
+# Twilio needs it to open the media stream back to us. Leave empty to disable.
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "").strip().rstrip("/")
+
+# Twilio (telephony / phone number).
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "").strip()
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "").strip()
+TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER", "").strip()
+
+# OpenAI Realtime (voice conversation). Uses OPENAI_API_KEY.
+REALTIME_MODEL = os.getenv("REALTIME_MODEL", "gpt-4o-realtime-preview").strip()
+REALTIME_VOICE = os.getenv("REALTIME_VOICE", "alloy").strip()
+
+# The AI agent's identity & behavior.
+CEO_NAME = os.getenv("CEO_NAME", "the executive").strip()
+AGENT_NAME = os.getenv("AGENT_NAME", "the AI assistant").strip()
+AGENT_GREETING = os.getenv(
+    "AGENT_GREETING",
+    "Hello, you've reached {ceo}'s AI assistant. This call may be recorded so I "
+    "can take notes. May I ask who's calling, and how I can help?",
+).strip()
+# Whether to also record the call audio via Twilio (transcript is always kept).
+CALL_RECORDING_ENABLED = os.getenv("CALL_RECORDING_ENABLED", "true").lower() == "true"
+
+# ---------------------------------------------------------------------------
+# Email notifications (post-call summaries sent to the CEO).
+# ---------------------------------------------------------------------------
+SMTP_HOST = os.getenv("SMTP_HOST", "").strip()
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER = os.getenv("SMTP_USER", "").strip()
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "").strip()
+SMTP_FROM = os.getenv("SMTP_FROM", "").strip() or SMTP_USER
+SMTP_TLS = os.getenv("SMTP_TLS", "true").lower() == "true"
+NOTIFY_EMAIL = os.getenv("NOTIFY_EMAIL", "").strip()
+
 # Respect the outbound proxy configured in this environment, if any.
 HTTPS_PROXY = os.getenv("HTTPS_PROXY", "") or os.getenv("https_proxy", "")
+
+
+def phone_agent_enabled() -> bool:
+    return bool(PUBLIC_BASE_URL and TWILIO_ACCOUNT_SID and OPENAI_API_KEY)
+
+
+def email_enabled() -> bool:
+    return bool(SMTP_HOST and SMTP_FROM and NOTIFY_EMAIL)
 
 
 def resolved_llm_provider() -> str:

@@ -17,7 +17,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import auth, briefing, config, db, memory, pipeline, search
+from . import auth, briefing, config, db, memory, notify, pipeline, search, telephony
 from .providers.llm import get_llm
 from .providers.transcription import get_transcriber
 
@@ -27,6 +27,7 @@ _executor = ThreadPoolExecutor(max_workers=2)
 
 app = FastAPI(title="AI Executive Assistant")
 app.mount("/static", StaticFiles(directory=str(BASE / "static")), name="static")
+app.include_router(telephony.router)   # AI phone agent (Twilio + OpenAI Realtime)
 
 COOKIE = "ceo_session"
 
@@ -47,6 +48,8 @@ def _startup() -> None:
         f"  LLM provider:    {get_llm().name}",
         f"  Transcription:   {get_transcriber().name}",
         f"  Full-text search:{'FTS5' if db.HAS_FTS5 else 'LIKE (fallback)'}",
+        f"  Phone agent:     {'ENABLED' if config.phone_agent_enabled() else 'disabled (needs PUBLIC_BASE_URL + Twilio + OpenAI)'}",
+        f"  Email summaries: {'ENABLED' if config.email_enabled() else 'disabled (needs SMTP_* + NOTIFY_EMAIL)'}",
     ]
     if auth.generated_password:
         banner += ["",
@@ -369,6 +372,37 @@ def api_audio(request: Request, cid: int):
     return FileResponse(path)
 
 
+@app.get("/api/phone/status")
+def api_phone_status(request: Request):
+    _require(request)
+    base = config.PUBLIC_BASE_URL or "https://YOUR-PUBLIC-URL"
+    return {
+        "enabled": config.phone_agent_enabled(),
+        "email_enabled": config.email_enabled(),
+        "twilio_number": config.TWILIO_PHONE_NUMBER or None,
+        "voice_webhook": f"{base}/voice/incoming",
+        "status_callback": f"{base}/voice/status",
+    }
+
+
+@app.post("/api/phone/simulate")
+async def api_phone_simulate(request: Request, transcript: str = Form(...),
+                             from_number: str = Form("Test caller")):
+    """Test the full post-call pipeline (extract + email) without a real call."""
+    _require(request)
+    call = {"from": from_number,
+            "turns": [(("Caller" if i % 2 == 0 else "Assistant"), line)
+                      for i, line in enumerate(
+                          [l for l in transcript.splitlines() if l.strip()])]}
+    if not call["turns"]:
+        raise HTTPException(400, "empty transcript")
+    telephony._process_call(call)  # synchronous so the test result is immediate
+    row = db.q1("SELECT id FROM conversations ORDER BY id DESC LIMIT 1")
+    return {"ok": True, "conversation_id": row["id"] if row else None,
+            "emailed": config.email_enabled()}
+
+
 @app.get("/healthz")
 def healthz():
-    return {"ok": True, "llm": get_llm().name, "transcriber": get_transcriber().name}
+    return {"ok": True, "llm": get_llm().name, "transcriber": get_transcriber().name,
+            "phone_agent": config.phone_agent_enabled()}

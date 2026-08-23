@@ -23,6 +23,9 @@ Before any code, four short documents answer the important questions:
    lives, what leaves your machine, encryption, backups, deletion.
 4. **[Setup Guide](docs/04-setup-guide.md)** — step-by-step for a
    non-programmer (API keys, running it, iPhone capture).
+5. **[AI Phone Agent](docs/05-ai-phone-agent.md)** — an AI that **answers your
+   calls**, records them, and **emails you a summary** (dedicated AI number +
+   call forwarding; cloud-based).
 
 **Executive summary of feasibility:** No app can silently record iPhone calls
 or WhatsApp calls — iOS and WhatsApp E2E encryption make that impossible, and
@@ -34,6 +37,10 @@ one tap. Everything *after* capture — the real value — is fully built.
 
 ## What it does (the MVP, implemented)
 
+- 📞 **AI Phone Agent** — a natural-voice AI **answers your calls** (Persian &
+  English), takes messages, records & transcribes, then **emails you an
+  executive summary** and saves it to the caller's profile. Uses a dedicated AI
+  number you forward your iPhone to. See [the guide](docs/05-ai-phone-agent.md).
 - 🎙 **Capture** — upload any audio (or paste a transcript / notes). iOS
   Shortcut for 1-tap sharing.
 - 📝 **Transcribe** — English, Persian, and mixed Persian/English, with
